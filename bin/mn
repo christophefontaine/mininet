@@ -28,7 +28,7 @@ from mininet.net import Mininet, MininetWithControlNet, VERSION
 from mininet.node import ( Host, CPULimitedHost, Controller, OVSController,
                            Ryu, NOX, RemoteController, findController,
                            DefaultController, NullController,
-                           UserSwitch, OVSSwitch, OVSBridge,
+                           UserSwitch, OVSSwitch, OVSBridge, VPPSwtich,
                            IVSSwitch )
 from mininet.nodelib import LinuxBridge
 from mininet.link import Link, TCLink, OVSLink
@@ -66,6 +66,7 @@ SWITCHES = { 'user': UserSwitch,
              'ovsk': OVSSwitch,
              'ivs': IVSSwitch,
              'lxbr': LinuxBridge,
+             'vpp': VPPSwitch,
              'default': OVSSwitch }
 
 HOSTDEF = 'proc'
