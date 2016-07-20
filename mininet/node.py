@@ -1553,9 +1553,8 @@ class VPPSwitch( Switch ):
 
     @classmethod
     def setup( cls ):
-        "Make sure VPP vSwitch is installed and working"
-        pathCheck( 'vppctl',
-                   moduleName='Open vSwitch (openvswitch.org)')
+        print "Make sure VPP vSwitch is installed and working"
+        
         version = quietRun( 'vppctl show version' )
         cls.OVSVersion = findall( r'\d+\.\d+', version )[ 0 ]
         quietRun( 'service vppctl restart')
@@ -1565,12 +1564,10 @@ class VPPSwitch( Switch ):
 
     def vsctl( self, *args ):
         "Run vppctl command"
-        return self.cmdPrint( 'vppctl ' + ' '.join(args) )
+        return self.cmd( 'vppctl ' + ' '.join(args) )
 
     def attach( self, intf ):
         "Connect a data port"
-        print("Plop")
-	pprint(self)
         self.vsctl( 'create host-interface name ' + intf.name )
         self.vsctl( 'set interface state ', 'host-'+intf.name , 'up')
 	self.vsctl( 'set interface l2 bridge', 'host-'+intf.name,  self.name[1:])
@@ -1581,16 +1578,6 @@ class VPPSwitch( Switch ):
         self.vsctl( 'delete host-interface ', self, intf )
 
     def controllerUUIDs( self, update=False ):
-        """Return ovsdb UUIDs for our controllers
-           update: update cached value"""
-        if not self._uuids or update:
-            controllers = self.cmd( 'ovs-vsctl -- get Bridge', self,
-                                    'Controller' ).strip()
-            if controllers.startswith( '[' ) and controllers.endswith( ']' ):
-                controllers = controllers[ 1 : -1 ]
-                if controllers:
-                    self._uuids = [ c.strip()
-                                    for c in controllers.split( ',' ) ]
         return self._uuids
 
     def connected( self ):
@@ -1632,9 +1619,6 @@ class VPPSwitch( Switch ):
 
     def start( self, controllers ):
         "Start up a new VPP switch"
-        if self.inNamespace:
-            raise Exception(
-                'OVS kernel switch does not work in a namespace' )
         int( self.dpid, 16 )  # DPID must be a hex string
         # Command to add interfaces
         for intf in self.intfList():
@@ -1648,50 +1632,11 @@ class VPPSwitch( Switch ):
 
     @classmethod
     def batchStartup( cls, switches, run=errRun ):
-        """Batch startup for OVS
-           switches: switches to start up
-           run: function to run commands (errRun)"""
-        info( '...' )
-        cmds = 'ovs-vsctl'
-        for switch in switches:
-            for cmd in switch.commands:
-                cmd = cmd.strip()
-                # Don't exceed ARG_MAX
-                if len( cmds ) + len( cmd ) >= cls.argmax:
-                    run( cmds, shell=True )
-                    cmds = 'ovs-vsctl'
-                cmds += ' ' + cmd
-                switch.cmds = []
-                switch.batch = False
-        if cmds:
-            run( cmds, shell=True )
-        # Reapply link config if necessary...
-        for switch in switches:
-            for intf in switch.intfs.itervalues():
-                if isinstance( intf, TCIntf ):
-                    intf.config( **intf.params )
         return switches
 
     def stop( self, deleteIntfs=True ):
-        """Terminate OVS switch.
-           deleteIntfs: delete interfaces? (True)"""
-        self.cmd( 'ovs-vsctl del-br', self )
-        if self.datapath == 'user':
-            self.cmd( 'ip link del', self )
-        super( OVSSwitch, self ).stop( deleteIntfs )
+        return
 
     @classmethod
     def batchShutdown( cls, switches, run=errRun ):
-        "Shut down a list of OVS switches"
-        delcmd = 'del-br %s'
-        if switches:
-            delcmd = '--if-exists ' + delcmd
-        # First, delete them all from ovsdb
-        run( 'ovs-vsctl ' +
-             ' -- '.join( delcmd % s for s in switches ) )
-        # Next, shut down all of the processes
-        pids = ' '.join( str( switch.pid ) for switch in switches )
-        run( 'kill -HUP ' + pids )
-        for switch in switches:
-            switch.shell = None
         return switches

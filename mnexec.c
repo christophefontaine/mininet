@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     char *cwd = get_current_dir_name();
 
     static struct sched_param sp;
-    while ((c = getopt(argc, argv, "+cdnpa:g:r:vh")) != -1)
+    while ((c = getopt(argc, argv, "+cdna:g:r:vhp")) != -1)
         switch(c) {
         case 'c':
             /* close file descriptors except stdin/out/error */
